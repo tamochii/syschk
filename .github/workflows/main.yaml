@@ -1,0 +1,50 @@
+# 工作流的名称
+name: Build and Release Go App
+
+# 当一个以 'v' 开头的标签被推送时触发
+on:
+  push:
+    tags:
+      - "v*" # 例如 v1.0, v1.2.3
+
+jobs:
+  build-and-release:
+    # 作业在最新的 Ubuntu 运行器上运行
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # 步骤 1: 检出你的仓库代码
+      - uses: actions/checkout@v4
+
+      # 步骤 2: 设置 Go 环境
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21" # 你可以根据需要更改 Go 版本
+
+      # 步骤 3: 交叉编译所有主流平台版本
+      - name: Build for Linux (amd64)
+        run: GOOS=linux GOARCH=amd64 go build -v -o go-socket-linux-amd64 main.go
+
+      - name: Build for Linux (arm64)
+        run: GOOS=linux GOARCH=arm64 go build -v -o go-socket-linux-arm64 main.go
+
+      - name: Build for Windows (amd64)
+        run: GOOS=windows GOARCH=amd64 go build -v -o go-socket-windows-amd64.exe main.go
+
+      - name: Build for Windows (arm64)
+        run: GOOS=windows GOARCH=arm64 go build -v -o go-socket-windows-arm64.exe main.go
+
+      - name: Build for macOS (amd64 - Intel)
+        run: GOOS=darwin GOARCH=amd64 go build -v -o go-socket-darwin-amd64 main.go
+
+      - name: Build for macOS (arm64 - Apple Silicon)
+        run: GOOS=darwin GOARCH=arm64 go build -v -o go-socket-darwin-arm64 main.go
+
+      # 步骤 4: 创建 Release 并上传所有编译好的程序
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 使用通配符上传所有以 'go-socket-' 开头的文件
+          files: go-socket-*
